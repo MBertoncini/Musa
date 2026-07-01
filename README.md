@@ -61,17 +61,44 @@ da 7-14B) se l'hardware lo consente: cambia solo `llm.model` in `config.yaml`.
 
 ```bash
 pip install -r requirements.txt
-
-# (opzionale ma consigliato) crea il modello custom con system prompt specializzato
-ollama create musa -f Modelfile
 ```
 
 Copia e personalizza la configurazione:
 
 ```bash
 cp config.example.yaml config.yaml
-# imposta la tua email (per la "polite pool" di OpenAlex) e il modello Ollama
+# imposta la tua email (per la "polite pool" di OpenAlex) e il modello Ollama (llm.model)
 ```
+
+### Modello Ollama custom (`Modelfile`) — opzionale ma consigliato
+
+Il file `Modelfile` definisce un modello Ollama su misura per Musa. Rispetto al modello
+base aggiunge:
+
+- un **system prompt anti-allucinazione** (non inventare paper/DOI/numeri, distingui
+  evidenza forte da debole, JSON pulito quando richiesto);
+- `temperature 0.2` per privilegiare il rigore alla creatività;
+- `num_ctx 8192` per far entrare più abstract insieme nel contesto.
+
+Crealo così:
+
+```bash
+ollama create musa -f Modelfile
+```
+
+Poi **dì a Musa di usarlo**, altrimenti resta inutilizzato — imposta in `config.yaml`:
+
+```yaml
+llm:
+  model: musa
+```
+
+oppure passalo al volo da CLI con `--model musa`.
+
+> **Caveat sul modello base.** Il `Modelfile` parte da `FROM gemma:2b`: se lo lasci così,
+> `musa` eredita i limiti dei modelli piccoli descritti sopra (sintesi superficiale). Per
+> qualità migliore, apri il `Modelfile`, cambia la riga `FROM` con un modello più capace
+> che hai già scaricato (es. `FROM qwen2.5:7b`) e rilancia `ollama create musa -f Modelfile`.
 
 ## Uso
 
@@ -98,6 +125,17 @@ Opzioni utili:
 ```bash
 streamlit run app.py
 ```
+
+## Screenshot
+
+Gli screenshot vivono nella cartella [`screen/`](screen/): basta trascinarci le immagini
+e verranno mostrate qui sotto (aggiorna i nomi file se usi nomi diversi).
+
+![Interfaccia web di Musa](screen/01-web.png)
+
+![Dossier generato](screen/02-dossier.png)
+
+![Esecuzione da CLI](screen/03-cli.png)
 
 ## Struttura del progetto
 
