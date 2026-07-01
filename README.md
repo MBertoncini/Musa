@@ -1,5 +1,7 @@
 # Musa — Assistente locale alla ricerca di letteratura
 
+🇮🇹 Italiano · [🇬🇧 English](README.en.md)
+
 Musa genera un **dossier di letteratura** su un argomento: i paper più importanti
 (rankati per rilevanza), gli autori di riferimento e una **sintesi ragionata** di cosa
 si sa e di quali sono le lacune aperte.
@@ -114,6 +116,7 @@ Opzioni utili:
 
 ```
 --model gemma:2b        modello Ollama da usare
+--lang it|en            lingua del dossier finale (titolo, sezioni, sintesi)
 --max-papers 120        tetto di paper processati
 --iterations 4          iterazioni max del loop ricerca+sintesi
 --no-verify             salta la fase di auto-verifica (più veloce)
