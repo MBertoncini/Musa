@@ -1,0 +1,8 @@
+# Tema "Grecia antica" — marmo, oro, blu Egeo
+[theme]
+base = "light"
+primaryColor = "#1F6F8B"          # blu Egeo
+backgroundColor = "#F6F0E2"       # marmo/papiro
+secondaryBackgroundColor = "#EDE4CE"
+textColor = "#2A2622"
+font = "serif"

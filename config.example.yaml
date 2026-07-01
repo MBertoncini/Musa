@@ -1,0 +1,45 @@
+# Configurazione di Musa. Copia questo file in `config.yaml` e personalizzalo.
+# I valori qui sotto sono i default: puoi rimuovere le righe che non vuoi cambiare.
+
+# --- Modello Ollama ---
+llm:
+  host: "http://localhost:11434"   # dove gira Ollama
+  model: "gemma:2b"                # modello da usare (ollama list per vedere i tuoi)
+  temperature: 0.2                 # basso = più deterministico, meglio per rigore
+  timeout: 180                     # secondi per singola chiamata
+
+# --- Fonte dati accademica ---
+openalex:
+  # Email per la "polite pool" di OpenAlex: rate limit più generosi e stabili.
+  # Non è una chiave segreta, serve solo perché OpenAlex sappia chi li interroga.
+  mailto: "tuo@email.it"
+  # API key GRATUITA di OpenAlex. Da qualche tempo OpenAlex, sotto carico, blocca le
+  # ricerche anonime con un errore 503. La key (gratis, registrazione rapida su
+  # https://openalex.org/rest-api) risolve il problema. Lasciala vuota per provare
+  # senza; se vedi il messaggio "ricerche anonime rate-limited", registrane una.
+  # In alternativa puoi usare la variabile d'ambiente OPENALEX_API_KEY.
+  api_key: ""
+  per_page: 50                     # risultati per pagina (max 200)
+  max_retries: 3
+
+# --- Cache locale ---
+cache:
+  dir: ".musa_cache"             # cartella per cache SQLite e log sessioni
+  ttl_days: 30                     # dopo quanti giorni una risposta API è "vecchia"
+
+# --- Guardrail della pipeline (tetti duri, non negoziabili a runtime dall'LLM) ---
+pipeline:
+  max_expanded_queries: 8          # fase 1: quante varianti di query al massimo
+  max_coverage_cycles: 2           # fase 3: cicli di raffinamento query
+  seed_papers: 40                  # quanti top paper entrano nel loop ricerca+sintesi
+  max_papers: 120                  # tetto totale di paper processati
+  max_iterations: 4                # fase 5+7: iterazioni max del loop
+  snowball_depth: 2                # profondità max nel grafo delle citazioni
+  saturation_min_new: 2            # < N nuovi paper rilevanti per iter => stop
+  deep_read_top: 12                # quanti top paper leggere più a fondo
+  enrich_top_authors: 15           # per quanti autori scaricare h-index ecc.
+
+# --- Output ---
+output:
+  dir: "dossier"                   # dove salvare i dossier generati
+  language: "it"                   # lingua della sintesi (it/en)
