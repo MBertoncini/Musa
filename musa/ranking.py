@@ -22,13 +22,23 @@ from .models import Author, Paper
 
 CURRENT_YEAR = datetime.now().year
 
-RANKING_CRITERIA_TEXT = (
-    "Score = 0.45·impatto_normalizzato(FWCI o citazioni/anno) "
-    "+ 0.30·log(citazioni grezze) + 0.15·recenza + 0.10·momentum recente. "
-    "I paper sono poi divisi in 'fondamentali storici' (alto impatto assoluto, più "
-    "datati) e 'frontiera recente' (ultimi ~4 anni, alto impatto normalizzato). "
-    "Nota: tutte le metriche di citazione hanno bias noti e vanno lette come indizi."
-)
+# Testo bilingue: il criterio finisce nel report, quindi segue la lingua scelta.
+RANKING_CRITERIA_TEXT = {
+    "it": (
+        "Score = 0.45·impatto_normalizzato(FWCI o citazioni/anno) "
+        "+ 0.30·log(citazioni grezze) + 0.15·recenza + 0.10·momentum recente. "
+        "I paper sono poi divisi in 'fondamentali storici' (alto impatto assoluto, più "
+        "datati) e 'frontiera recente' (ultimi ~4 anni, alto impatto normalizzato). "
+        "Nota: tutte le metriche di citazione hanno bias noti e vanno lette come indizi."
+    ),
+    "en": (
+        "Score = 0.45·normalized_impact(FWCI or citations/year) "
+        "+ 0.30·log(raw citations) + 0.15·recency + 0.10·recent momentum. "
+        "Papers are then split into 'historical foundational' (high absolute impact, "
+        "older) and 'recent frontier' (last ~4 years, high normalized impact). "
+        "Note: all citation metrics have known biases and should be read as hints."
+    ),
+}
 
 
 def _norm(values: List[float]) -> Dict[int, float]:

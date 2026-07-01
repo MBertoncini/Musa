@@ -115,6 +115,7 @@ class Dossier:
     topic: str
     session_id: str
     created_at: str
+    language: str = "it"          # lingua del report ("it" | "en")
     expanded_queries: List[str] = field(default_factory=list)
     papers: List[Paper] = field(default_factory=list)        # rankati
     foundational: List[Paper] = field(default_factory=list)

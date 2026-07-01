@@ -21,7 +21,10 @@ SYSTEM = (
 
 
 # --- Fase 1: espansione query --------------------------------------------
-def expand_query(topic: str, language: str = "it") -> str:
+# Nota: i termini di ricerca restano indipendenti dalla lingua del report. La
+# letteratura scientifica è in larga parte in inglese, quindi la query si espande
+# sempre includendo le varianti inglesi, a prescindere dalla lingua dell'output.
+def expand_query(topic: str) -> str:
     return f"""Un ricercatore vuole la letteratura più importante su questo argomento:
 "{topic}"
 
@@ -120,8 +123,9 @@ Non usare JSON: scrivi prosa. Non inventare nulla che non sia già nella sintesi
 
 
 # --- Fase 8: auto-verifica -----------------------------------------------
-def verify_claims(overview: str, valid_ids: List[str]) -> str:
+def verify_claims(overview: str, valid_ids: List[str], language: str = "it") -> str:
     ids_txt = ", ".join(valid_ids[:80])
+    lang = "italiano" if language == "it" else "inglese"
     return f"""Questo è un testo di sintesi della letteratura:
 ---
 {overview}
@@ -131,7 +135,8 @@ Gli identificatori di paper REALMENTE disponibili sono: {ids_txt}
 
 Controlla il testo. Ci sono affermazioni fattuali forti che NON sono supportate da
 nessun paper reale, o che sembrano inventate (numeri, nomi, risultati specifici non
-ancorati)? Elenca solo i problemi concreti, non i dettagli di stile.
+ancorati)? Elenca solo i problemi concreti, non i dettagli di stile. Scrivi ogni
+problema in {lang} (è la lingua del report).
 
 Rispondi con SOLO questo JSON:
 {{"issues": ["descrizione del problema 1", "..."], "confidence": "alta" | "media" | "bassa"}}

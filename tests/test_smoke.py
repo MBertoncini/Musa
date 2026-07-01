@@ -116,6 +116,34 @@ def test_render_markdown_minimal():
     assert "Lacune e domande aperte" in md
 
 
+def test_render_markdown_english():
+    papers = score_papers(_sample_papers())
+    split_foundational_frontier(papers)
+    d = Dossier(topic="test topic", session_id="abc", created_at="2026-01-01",
+                language="en")
+    d.papers = papers
+    d.foundational = [p for p in papers if p.category == "foundational"]
+    d.frontier = [p for p in papers if p.category == "frontier"]
+    d.authors = aggregate_authors(papers)
+    d.overview = "A test overview."
+    d.thematic_map = ThematicMap(key_findings=["X is known"], open_gaps=["Y is missing"])
+    d.stats = {"n_papers": 3, "model": "gemma:2b"}
+    md = render_markdown(d)
+    # Titolo e sezioni in inglese
+    assert "# Literature dossier — test topic" in md
+    assert "## Foundational papers" in md
+    assert "## Reference authors" in md
+    assert "## Gaps and open questions" in md
+    assert "## Method and limits" in md
+    # Nessun residuo italiano nell'impalcatura del report
+    for it_only in ["Paper fondamentali", "Autori di riferimento",
+                    "Lacune e domande aperte", "Metodo e limiti"]:
+        assert it_only not in md
+    # L'indice punta ad ancore coerenti con i titoli tradotti
+    assert "[Foundational papers](#foundational-papers)" in md
+    assert "[Method and limits](#method-and-limits)" in md
+
+
 if __name__ == "__main__":
     # Runner minimale senza pytest.
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

@@ -82,13 +82,14 @@ class Orchestrator:
             topic=topic,
             session_id=session_id,
             created_at=datetime.now().isoformat(timespec="seconds"),
-            ranking_criteria=RANKING_CRITERIA_TEXT,
+            language=lang,
+            ranking_criteria=RANKING_CRITERIA_TEXT.get(lang, RANKING_CRITERIA_TEXT["it"]),
         )
 
         # --- Fase 1: espansione query [LLM] ---
         self.progress("1/8", "Espansione della query…")
         queries = phases.expand_query(
-            self.llm, topic, lang, cfg_p["max_expanded_queries"]
+            self.llm, topic, cfg_p["max_expanded_queries"]
         )
         dossier.expanded_queries = queries
         self.progress("1/8", f"{len(queries)} termini: {', '.join(queries[:6])}…")
@@ -106,9 +107,16 @@ class Orchestrator:
                     "Ottieni una API key gratuita su https://openalex.org/rest-api e "
                     "impostala in config.yaml (openalex.api_key) o nella variabile "
                     "d'ambiente OPENALEX_API_KEY, poi riprova."
+                ) if lang == "it" else (
+                    "OpenAlex is rate-limiting anonymous searches (heavy load). "
+                    "Get a free API key at https://openalex.org/rest-api and set it "
+                    "in config.yaml (openalex.api_key) or the OPENALEX_API_KEY "
+                    "environment variable, then try again."
                 )
             else:
-                msg = "Nessun paper trovato. Prova un argomento diverso o più ampio."
+                msg = ("Nessun paper trovato. Prova un argomento diverso o più ampio."
+                       if lang == "it" else
+                       "No papers found. Try a different or broader topic.")
             self.progress("!", msg)
             dossier.overview = msg
             self._finalize_stats(dossier, started, 0)
@@ -167,10 +175,13 @@ class Orchestrator:
             self.progress("8/8", "Auto-verifica dei claim…")
             valid_ids = [p.id for p in dossier.papers]
             dossier.verification_notes = phases.verify(
-                self.llm, dossier.overview, valid_ids
+                self.llm, dossier.overview, valid_ids, lang
             )
         else:
-            dossier.verification_notes = ["Auto-verifica saltata (--no-verify)."]
+            dossier.verification_notes = [
+                "Auto-verifica saltata (--no-verify)." if lang == "it"
+                else "Self-verification skipped (--no-verify)."
+            ]
 
         self._finalize_stats(dossier, started, len(dossier.papers))
 

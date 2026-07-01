@@ -24,7 +24,7 @@ from ..sources.openalex import OpenAlexClient
 # Fase 1 — Espansione query  [LLM + guardrail]
 # =========================================================================
 def expand_query(
-    llm: OllamaClient, topic: str, language: str, max_terms: int
+    llm: OllamaClient, topic: str, max_terms: int
 ) -> List[str]:
     fallback = [topic]
 
@@ -32,7 +32,7 @@ def expand_query(
         return isinstance(x, list) and all(isinstance(i, str) for i in x)
 
     result = llm.generate_json(
-        prompts.expand_query(topic, language),
+        prompts.expand_query(topic),
         system=prompts.SYSTEM,
         fallback=fallback,
         validator=_valid,
@@ -196,7 +196,7 @@ def research_and_synthesize(
             saturated = bool(result.get("saturated"))
         else:
             # Fallback: se l'LLM ha fallito del tutto, registra almeno i titoli.
-            _fallback_merge(tmap, batch)
+            _fallback_merge(tmap, batch, language)
 
         tmap.iteration = iteration + 1
 
@@ -293,12 +293,14 @@ def _merge_into_map(tmap: ThematicMap, result: Dict[str, Any], valid_ids: set) -
         tmap.open_gaps = [str(g)[:400] for g in gaps if str(g).strip()][:20]
 
 
-def _fallback_merge(tmap: ThematicMap, batch: List[Paper]) -> None:
+def _fallback_merge(tmap: ThematicMap, batch: List[Paper], language: str = "it") -> None:
     """Se l'LLM fallisce, non perdere il giro: registra i paper in un cluster grezzo."""
-    generic = next((c for c in tmap.clusters if c.name == "Da rivedere"), None)
+    name = "Da rivedere" if language == "it" else "To review"
+    summary = ("Paper recuperati ma non sintetizzati." if language == "it"
+               else "Papers retrieved but not yet synthesized.")
+    generic = next((c for c in tmap.clusters if c.name == name), None)
     if generic is None:
-        generic = ThematicCluster(name="Da rivedere",
-                                  summary="Paper recuperati ma non sintetizzati.")
+        generic = ThematicCluster(name=name, summary=summary)
         tmap.clusters.append(generic)
     generic.paper_ids.extend(p.id for p in batch)
 
@@ -316,32 +318,50 @@ def write_overview(
     if text and text.strip():
         return text.strip()
     # Fallback: costruisci una panoramica minima dai dati strutturati.
+    it = language == "it"
+    known_lbl = "Cosa si sa: " if it else "What is known: "
+    gaps_lbl = "Lacune aperte: " if it else "Open gaps: "
+    empty = "(sintesi non disponibile)" if it else "(overview not available)"
     parts = []
     if tmap.key_findings:
-        parts.append("Cosa si sa: " + " ".join(tmap.key_findings))
+        parts.append(known_lbl + " ".join(tmap.key_findings))
     if tmap.open_gaps:
-        parts.append("Lacune aperte: " + " ".join(tmap.open_gaps))
-    return "\n\n".join(parts) or "(sintesi non disponibile)"
+        parts.append(gaps_lbl + " ".join(tmap.open_gaps))
+    return "\n\n".join(parts) or empty
 
 
 # =========================================================================
 # Fase 8 — Auto-verifica  [LLM + rete di sicurezza deterministica]
 # =========================================================================
+# Mappa i valori di confidenza (che l'LLM restituisce in italiano) alla lingua del report.
+_CONFIDENCE_EN = {"alta": "high", "media": "medium", "bassa": "low"}
+
+
 def verify(
-    llm: OllamaClient, overview: str, valid_ids: List[str]
+    llm: OllamaClient, overview: str, valid_ids: List[str], language: str = "it"
 ) -> List[str]:
+    it = language == "it"
     result = llm.generate_json(
-        prompts.verify_claims(overview, valid_ids),
+        prompts.verify_claims(overview, valid_ids, language),
         system=prompts.SYSTEM,
         fallback={"issues": [], "confidence": "media"},
     )
     issues = (result or {}).get("issues", []) or []
     notes = [str(i) for i in issues if str(i).strip()]
     conf = (result or {}).get("confidence", "media")
+    if not it:
+        conf = _CONFIDENCE_EN.get(str(conf).lower(), conf)
     if not notes:
-        notes.append(f"Nessun problema evidente rilevato (confidenza: {conf}).")
+        notes.append(
+            f"Nessun problema evidente rilevato (confidenza: {conf})." if it
+            else f"No obvious issues detected (confidence: {conf})."
+        )
     else:
-        notes.insert(0, f"Confidenza complessiva della sintesi: {conf}.")
+        notes.insert(
+            0,
+            f"Confidenza complessiva della sintesi: {conf}." if it
+            else f"Overall confidence of the synthesis: {conf}."
+        )
     return notes
 
 
