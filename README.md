@@ -128,9 +128,6 @@ streamlit run app.py
 
 ## Screenshot
 
-Gli screenshot vivono nella cartella [`screen/`](screen/): basta trascinarci le immagini
-e verranno mostrate qui sotto (aggiorna i nomi file se usi nomi diversi).
-
 ![Interfaccia web di Musa](screen/01-web.png)
 
 ![Dossier generato](screen/02-dossier.png)

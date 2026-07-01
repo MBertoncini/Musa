@@ -10,6 +10,7 @@ from datetime import datetime
 import streamlit as st
 
 from musa.config import Config
+from musa.meander import random_meander
 from musa.pipeline import Orchestrator
 from musa.render import render_markdown
 
@@ -30,12 +31,14 @@ def _asset(name: str) -> str:
 
 AVATAR_SVG = _asset("musa_avatar.svg")
 
-_MEANDER = (
-    "data:image/svg+xml;utf8,"
-    "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='16' viewBox='0 0 40 16'>"
-    "<path d='M0 3 H40 M32 3 V13 H8 V7 H24' fill='none' stroke='%23B8901F' stroke-width='2'/>"
-    "</svg>"
-)
+# Greca (meandro) generata proceduralmente: diversa a ogni sessione ma sempre
+# in stile greco antico. Salvata in session_state così resta stabile tra i
+# rerun della stessa sessione. Vedi musa/meander.py.
+if "meander" not in st.session_state:
+    st.session_state["meander"] = random_meander()
+_MEANDER_OBJ = st.session_state["meander"]
+_MEANDER = _MEANDER_OBJ.data_uri
+_MEANDER_H = _MEANDER_OBJ.height
 
 GREEK_CSS = f"""
 <style>
@@ -89,9 +92,9 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
   font-family: 'Cinzel', serif; }}
 .musa-hero .sub {{ font-style: italic; color: #5B5346; margin-top: 4px; font-size: 1.03rem; }}
 
-.meander {{ height: 16px; margin: 8px 0 14px;
+.meander {{ height: {_MEANDER_H}px; margin: 8px 0 14px;
   background-image: url("{_MEANDER}");
-  background-repeat: repeat-x; opacity: .9; }}
+  background-repeat: repeat-x; background-position: center; opacity: .9; }}
 
 .sidebar-muse {{ text-align: center; margin: -6px 0 8px; }}
 .sidebar-muse svg {{ width: 88px; height: 88px;
@@ -123,14 +126,49 @@ with st.sidebar:
     st.header("Impostazioni")
     cfg = Config.load()
 
-    model = st.text_input("Modello Ollama", cfg.llm["model"])
-    mailto = st.text_input("Email (OpenAlex polite pool)", cfg.openalex["mailto"])
-    lang = st.selectbox("Lingua sintesi", ["it", "en"],
-                        index=0 if cfg.output["language"] == "it" else 1)
-    max_papers = st.slider("Paper max", 30, 300, cfg.pipeline["max_papers"], step=10)
-    iterations = st.slider("Iterazioni loop", 1, 8, cfg.pipeline["max_iterations"])
-    verify = st.checkbox("Auto-verifica dei claim", value=True)
-    fresh = st.checkbox("Ignora cache (riscarica)", value=False)
+    model = st.text_input(
+        "Modello Ollama", cfg.llm["model"],
+        help="Nome del modello LLM servito da Ollama in locale (es. `llama3`, "
+             "`musa`). Deve corrispondere a un modello già scaricato con "
+             "`ollama pull` o creato dal Modelfile. Usato per generare la sintesi "
+             "e verificare i claim.",
+    )
+    mailto = st.text_input(
+        "Email (OpenAlex polite pool)", cfg.openalex["mailto"],
+        help="La tua email viene inviata a OpenAlex per accedere al *polite pool*: "
+             "richieste più veloci e affidabili, nessun costo. Non è obbligatoria "
+             "ma fortemente consigliata. Non viene condivisa con altri servizi.",
+    )
+    lang = st.selectbox(
+        "Lingua sintesi", ["it", "en"],
+        index=0 if cfg.output["language"] == "it" else 1,
+        help="Lingua in cui verrà scritto il dossier finale: italiano (`it`) o "
+             "inglese (`en`). Non influisce sulla lingua dei paper cercati.",
+    )
+    max_papers = st.slider(
+        "Paper max", 30, 300, cfg.pipeline["max_papers"], step=10,
+        help="Numero massimo di paper scaricati da OpenAlex e analizzati. Valori "
+             "più alti danno una copertura più ampia ma rallentano la pipeline e "
+             "consumano più contesto dell'LLM.",
+    )
+    iterations = st.slider(
+        "Iterazioni loop", 1, 8, cfg.pipeline["max_iterations"],
+        help="Quante volte la pipeline affina la ricerca (raffina query, aggiunge "
+             "paper, riscrive la sintesi). Più iterazioni migliorano la qualità ma "
+             "aumentano i tempi di esecuzione.",
+    )
+    verify = st.checkbox(
+        "Auto-verifica dei claim", value=True,
+        help="Se attivo, l'LLM ricontrolla ogni affermazione del dossier confron"
+             "tandola con i paper citati, segnalando quelle non supportate. "
+             "Migliora l'affidabilità ma aggiunge una fase in più.",
+    )
+    fresh = st.checkbox(
+        "Ignora cache (riscarica)", value=False,
+        help="Se attivo, ignora i dati salvati in `.musa_cache` e riscarica tutto "
+             "da OpenAlex. Utile per avere risultati aggiornati; lascialo disatti"
+             "vato per rieseguire più velocemente la stessa ricerca.",
+    )
 
     cfg.llm["model"] = model
     cfg.openalex["mailto"] = mailto

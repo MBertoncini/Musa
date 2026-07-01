@@ -8,6 +8,7 @@ config.yaml
 dossier/
 out/
 *.md.bak
+meander_preview.html
 
 # Python
 __pycache__/
